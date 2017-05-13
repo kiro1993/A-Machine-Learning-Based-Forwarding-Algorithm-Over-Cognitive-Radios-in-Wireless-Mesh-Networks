@@ -46,7 +46,6 @@ public class Mesh {
 			}
 		}
 	}
-
 	public void floodWithGPS(Message msg) {
 		SimLog.print("");
 
@@ -62,28 +61,63 @@ public class Mesh {
 		SimLog.print(
 				"flooding region is reduced. region from x " + minX + " : " + maxX + " and y " + minY + " : " + maxY);
 
+
+		float maxBandwidth = -1;
+		Node maxNode = null;
+
 		for (Node node : nodes) {
 			if (node.getGps().getX() >= minX && node.getGps().getX() <= maxX && node.getGps().getY() >= minY
 					&& node.getGps().getY() <= maxY && msg.getCarrierIP() != node.getIp()) {
 				
-				Rayleigh ray = ipToipBandwidthMap.get(msg.getCarrierIP() + node.getIp());
-				if (ray == null) {
-					ray = new Rayleigh((float) (Math.random() * 10) + 10);
-					ipToipBandwidthMap.put(msg.getCarrierIP() + node.getIp(), ray);
-					ipToipBandwidthMap.put(node.getIp() + msg.getCarrierIP(), ray);
+				BandwidthState x = node.getIpStateMap().get(msg.getCarrierIP());
+				if (x == null) {
+					x = new BandwidthState();
+					node.getIpStateMap().put(msg.getCarrierIP(), new BandwidthState());
 				}
-				float bandwidth = ray.getNextBandWidth();
-				node.receive(msg, bandwidth, msg.getCarrierTime() + Message.MSG_PAYLOAD_SIZE / bandwidth);
+				float expected = x.getExpectedBandwidth(msg.getCarrierTime());
+				SimLog.print("\nel expected el rege3ly:"+expected);
+				if (expected==-5){		//means there is no enough previous cases to predict the next bandwidth 
+					Rayleigh ray = ipToipBandwidthMap.get(msg.getCarrierIP() + node.getIp());
+					if (ray == null) {
+						ray = new Rayleigh((float) (Math.random() * 10) + 10);
+						ipToipBandwidthMap.put(msg.getCarrierIP() + node.getIp(), ray);
+						ipToipBandwidthMap.put(node.getIp() + msg.getCarrierIP(), ray);
+					}
+					float bandwidth = ray.getNextBandWidth();
+					node.receive(msg, bandwidth, msg.getCarrierTime() + Message.MSG_PAYLOAD_SIZE / bandwidth);
+					SimLog.print("node ip:" + node.getIp() + " , gps:(x=" + node.getGps().getX() + ",y="
+							+ node.getGps().getY() + " was located in flooding region ");
+
+				}
+				else{
+					if (expected > maxBandwidth){
+						maxBandwidth = expected;
+						maxNode = node;
+					}
+				}
+
 				
 				
-				
-				SimLog.print("node ip:" + node.getIp() + " , gps:(x=" + node.getGps().getX() + ",y="
-						+ node.getGps().getY() + " was located in flooding region");
 			} else {
 				SimLog.print("node ip:" + node.getIp() + " , gps:(x=" + node.getGps().getX() + ",y="
 						+ node.getGps().getY() + " was not located in flooding region");
 			}
 		}
+		if(maxNode != null){
+			Rayleigh ray = ipToipBandwidthMap.get(msg.getCarrierIP() + maxNode.getIp());
+			if (ray == null) {
+				ray = new Rayleigh((float) (Math.random() * 100) + 10);
+				ipToipBandwidthMap.put(msg.getCarrierIP() + maxNode.getIp(), ray);
+				ipToipBandwidthMap.put(maxNode.getIp() + msg.getCarrierIP(), ray);
+			}
+			float bandwidth = ray.getNextBandWidth();
+			maxNode.receive(msg, bandwidth, msg.getCarrierTime() + Message.MSG_PAYLOAD_SIZE / bandwidth);
+			SimLog.print("*************************************node ip:" + maxNode.getIp() + " , gps:(x=" + maxNode.getGps().getX() + ",y="
+					+ maxNode.getGps().getY() + " was located in flooding region ... Expected bandwidth:" +maxBandwidth +" ,Actual Bandwidth:"+bandwidth);
+		
+			}
+		
+
 	}
 
 	public void generateNodes() {
