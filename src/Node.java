@@ -30,6 +30,10 @@ public class Node {
 	public GPS getGps() {
 		return gps;
 	}
+	
+	public HashMap<String, BandwidthState> getIpStateMap() {
+		return ipStateMap;
+	}
 
 	public void setGps(GPS gps) {
 		this.gps = gps;
