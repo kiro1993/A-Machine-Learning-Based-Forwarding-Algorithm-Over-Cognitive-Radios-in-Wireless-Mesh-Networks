@@ -35,8 +35,9 @@ public class BandwidthState {
 	}
 
 	public Float getExpectedBandwidth(float tp) {
+		SimLog.print("\n#########################b0:"+b0+" ,b1:"+b1+", b2:"+b2);
 		if (t0 == 0)
-			return null;
+			return -5;
 		float alpha0 = b0 / t0;
 		float alpha1 = alpha0 + b1 / (t1 - t0);
 		float alpha2 = alpha1 + b2 / ((t2 - t1) * (t2 - t0));
